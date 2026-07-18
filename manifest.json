@@ -1,0 +1,15 @@
+{
+  "name": "My Travel Organizer - Jony JJ Edition",
+  "short_name": "MTO",
+  "description": "Plan flights, stays, tours, budget, notes and emergency contacts for your Banaue trip - works offline.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#F6F0E3",
+  "theme_color": "#3E5C3F",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

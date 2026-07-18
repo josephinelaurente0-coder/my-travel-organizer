@@ -1,0 +1,1195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+<title>My Travel Organizer</title>
+<link rel="manifest" href="manifest.json" />
+<link rel="icon" href="icon-192.png" />
+<link rel="apple-touch-icon" href="icon-192.png" />
+<meta name="theme-color" content="#3E5C3F" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="My Travel Organizer" />
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700;9..144,900&family=Work+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap');
+  :root{
+    --soil:#33261C; --soilSoft:#5C4A3A; --bark:#7A5A3E;
+    --terraceDeep:#3E5C3F; --terraceMid:#6E8F5C; --terraceLight:#9CB57F;
+    --gold:#C7962F; --goldSoft:#E4C77A; --clay:#B3612F;
+    --mist:#F6F0E3; --paper:#FBF7EE; --fog:#EDE4CF;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:var(--mist);font-family:'Work Sans',sans-serif;color:var(--soil);}
+  #shell{max-width:440px;margin:0 auto;min-height:100vh;position:relative;background:var(--mist);box-shadow:0 0 40px rgba(51,38,28,0.08);}
+  h1,h2,h3,.serif{font-family:'Fraunces',serif;}
+  .mono{font-family:'IBM Plex Mono',monospace;}
+  .uc{text-transform:uppercase;letter-spacing:.5px;}
+  button{font-family:inherit;cursor:pointer;}
+  input,select,textarea{font-family:'Work Sans',sans-serif;font-size:14.5px;width:100%;box-sizing:border-box;border:1.5px solid var(--fog);background:var(--paper);border-radius:10px;padding:10px 12px;color:var(--soil);outline:none;}
+  input:focus,select:focus,textarea:focus{border-color:var(--gold);}
+  .field{display:block;margin-bottom:12px;}
+  .field .lbl{font-size:11.5px;font-weight:600;letter-spacing:.4px;color:var(--soilSoft);text-transform:uppercase;display:block;margin-bottom:5px;}
+  .row2{display:flex;gap:10px;}
+  .row2>div{flex:1;}
+  .btn-primary{width:100%;background:var(--terraceDeep);color:var(--mist);border:none;border-radius:10px;padding:12px 16px;font-weight:600;font-size:14.5px;display:flex;align-items:center;justify-content:center;gap:8px;}
+  .btn-primary:disabled{background:var(--bark);opacity:.6;cursor:not-allowed;}
+  .card{background:var(--paper);border:1px solid var(--fog);border-radius:14px;padding:14px;margin-bottom:12px;box-shadow:0 1px 2px rgba(51,38,28,.05);}
+  .icon{display:inline-flex;vertical-align:middle;}
+  .meta-row{display:flex;align-items:center;gap:6px;margin-top:6px;font-size:12.5px;color:var(--soilSoft);}
+  .cost-pill{display:inline-block;margin-top:8px;background:var(--fog);border-radius:8px;padding:3px 9px;font-size:12px;color:var(--clay);font-weight:500;}
+  .empty{text-align:center;padding:40px 20px;color:var(--soilSoft);}
+  .empty .circ{width:56px;height:56px;border-radius:50%;background:var(--fog);display:flex;align-items:center;justify-content:center;margin:0 auto 14px;}
+  .empty .t{font-family:'Fraunces',serif;font-weight:600;font-size:16px;color:var(--soil);margin-bottom:4px;}
+  .empty .s{font-size:13px;line-height:1.5;}
+  .action-col{display:flex;flex-direction:column;gap:6px;align-items:center;flex-shrink:0;}
+  .del-btn,.edit-btn{background:transparent;border:none;padding:6px;display:flex;border-radius:8px;}
+  .del-btn{color:var(--clay);}
+  .edit-btn{color:var(--terraceDeep);}
+  .del-btn:active,.edit-btn:active{background:var(--fog);}
+  .tabhead{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;}
+  .tabhead-left{display:flex;align-items:center;gap:10px;}
+  .tabhead-icon{width:36px;height:36px;border-radius:10px;background:var(--terraceDeep);display:flex;align-items:center;justify-content:center;}
+  .tabhead-title{font-family:'Fraunces',serif;font-weight:700;font-size:21px;color:var(--soil);line-height:1.1;}
+  .tabhead-add{background:var(--gold);border:none;border-radius:10px;width:36px;height:36px;display:flex;align-items:center;justify-content:center;}
+  .tabsub{font-size:13px;color:var(--soilSoft);margin-bottom:16px;}
+  .tabpad{padding:18px 16px 100px;}
+  #sheetOverlay{position:fixed;inset:0;z-index:50;display:none;align-items:flex-end;justify-content:center;}
+  #sheetOverlay.open{display:flex;}
+  #sheetBg{position:absolute;inset:0;background:rgba(51,38,28,.45);}
+  #sheetBody{position:relative;width:100%;max-width:440px;max-height:88%;overflow-y:auto;background:var(--mist);border-radius:20px 20px 0 0;padding:18px 18px 22px;animation:slideUp .22s ease-out;}
+  @keyframes slideUp{from{transform:translateY(24px);opacity:.6;}to{transform:translateY(0);opacity:1;}}
+  #sheetHead{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+  #sheetTitle{font-family:'Fraunces',serif;font-weight:700;font-size:19px;}
+  #sheetClose{background:var(--fog);border:none;border-radius:50%;width:30px;height:30px;display:flex;align-items:center;justify-content:center;}
+  #bottomnav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:440px;background:var(--paper);border-top:1px solid var(--fog);display:flex;padding:8px 4px calc(env(safe-area-inset-bottom,0px) + 8px);z-index:20;}
+  .navbtn{flex:1;background:none;border:none;display:flex;flex-direction:column;align-items:center;gap:3px;padding:4px 0;color:var(--bark);}
+  .navbtn.active{color:var(--terraceDeep);}
+  .navbtn span{font-size:10px;font-weight:500;}
+  .navbtn.active span{font-weight:700;}
+  #header{position:sticky;top:0;z-index:10;background:var(--mist);}
+  #headerRow{display:flex;align-items:center;gap:10px;padding:14px 16px 10px;}
+  .terrace-divider{display:flex;width:100%;height:6px;}
+  .terrace-divider>div{flex:1;}
+  ::-webkit-scrollbar{width:0;height:0;}
+  .chip{flex-shrink:0;border:1.4px solid var(--fog);background:var(--paper);color:var(--soilSoft);border-radius:20px;padding:6px 14px;font-size:12.5px;font-weight:600;white-space:nowrap;}
+  .chip.active{border-color:var(--terraceDeep);background:var(--terraceDeep);color:var(--mist);}
+  #offlineBadge{position:fixed;top:8px;left:50%;transform:translateX(-50%);background:var(--soil);color:var(--mist);font-size:11.5px;font-weight:600;padding:5px 12px;border-radius:20px;z-index:60;display:none;box-shadow:0 2px 8px rgba(0,0,0,.2);}
+  #offlineBadge.show{display:block;}
+</style>
+</head>
+<body>
+<div id="offlineBadge">You're offline — your data is safe on this device</div>
+<div id="shell">
+  <div id="header">
+    <div id="headerRow">
+      <div id="logoSlot40"></div>
+      <div>
+        <div class="serif" style="font-weight:800;font-size:17px;line-height:1.1;">My Travel Organizer</div>
+        <div style="font-size:11px;color:var(--soilSoft);letter-spacing:.3px;">Jony JJ Edition</div>
+      </div>
+    </div>
+    <div class="terrace-divider">
+      <div style="background:var(--terraceDeep)"></div><div style="background:var(--terraceMid)"></div><div style="background:var(--terraceLight)"></div><div style="background:var(--gold)"></div>
+    </div>
+  </div>
+
+  <div id="content"></div>
+
+  <div id="bottomnav"></div>
+</div>
+
+<div id="sheetOverlay">
+  <div id="sheetBg"></div>
+  <div id="sheetBody">
+    <div id="sheetHead">
+      <span id="sheetTitle"></span>
+      <button id="sheetClose"></button>
+    </div>
+    <div id="sheetContent"></div>
+  </div>
+</div>
+
+<script>
+/* ---------------- ICONS (inline SVG, no dependencies) ---------------- */
+const ICON = {
+  plane: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-1 .1-1.3.5l-.4.6c-.4.5-.2 1.2.3 1.5L9 12l-2 3H4l-1 1.5 3.5 1 1 3.5L9 20v-3l3-2 3.6 5.6c.3.5 1 .7 1.5.3l.6-.4c.4-.3.6-.8.5-1.3z"/></svg>',
+  building: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="1"/><path d="M9 22v-4h6v4M8 6h.01M12 6h.01M16 6h.01M8 10h.01M12 10h.01M16 10h.01M8 14h.01M12 14h.01M16 14h.01"/></svg>',
+  map: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6v14l-6-3-6 3-4-2V4l4 2 6-3 6 3z"/><path d="M14 3v14M8 6v14"/></svg>',
+  wallet: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-9a2 2 0 0 0-2-2z"/><path d="M2 10h20M16 15h.01"/><path d="M6 7V5a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v2"/></svg>',
+  notes: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3v4a1 1 0 0 0 1 1h4"/><path d="M17 21H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2z"/><path d="M9 13h6M9 17h4"/></svg>',
+  grid: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>',
+  plus: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
+  trash: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6"/><path d="M10 11v6M14 11v6"/></svg>',
+  edit: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>',
+  x: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>',
+  calendar: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>',
+  clock: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>',
+  pin: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0z"/><circle cx="12" cy="10" r="3"/></svg>',
+  ticket: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v1a2 2 0 0 0 0 4v1a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-1a2 2 0 0 0 0-4z"/></svg>',
+  chevron: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg>',
+  checksq: '<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="m9 12 2 2 4-4"/></svg>',
+  sq: '<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>',
+  sparkle: '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2 2M16 16l2 2M6 18l2-2M16 8l2-2"/></svg>',
+  tag: '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m20.6 12.6-8 8a2 2 0 0 1-2.8 0l-7.4-7.4a2 2 0 0 1 0-2.8l8-8A2 2 0 0 1 12 2h7a1 1 0 0 1 1 1v7a2 2 0 0 1-.4 1.6z"/><circle cx="16" cy="8" r="1.5"/></svg>',
+  phone: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg>',
+  alert: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><path d="M12 9v4M12 17h.01"/></svg>',
+  download: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>',
+  folder: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"/></svg>',
+  idcard: '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><circle cx="8" cy="12" r="2"/><path d="M14 10h6M14 14h4"/></svg>',
+  book: '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>',
+  currency: '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m17 2 4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="m7 22-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>',
+};
+
+/* ---------------- LOGO ---------------- */
+function logoSVG(size){
+  return `<svg width="${size}" height="${size}" viewBox="0 0 100 100">
+    <defs>
+      <path id="topArcMTA${size}" d="M 11,50 A 39,39 0 1 1 89,50"/>
+      <path id="botArcMTA${size}" d="M 85,50 A 35,35 0 1 1 15,50"/>
+    </defs>
+    <circle cx="50" cy="50" r="49" fill="var(--paper)"/>
+    <circle cx="50" cy="50" r="41" fill="none" stroke="var(--terraceDeep)" stroke-width="6"/>
+    <circle cx="50" cy="50" r="34" fill="none" stroke="var(--terraceMid)" stroke-width="5" stroke-dasharray="2.4 2.2"/>
+    <circle cx="50" cy="50" r="27" fill="none" stroke="var(--terraceLight)" stroke-width="4.5" stroke-dasharray="2.4 2.2"/>
+    <circle cx="50" cy="50" r="49" fill="none" stroke="var(--gold)" stroke-width="1.6"/>
+    <circle cx="50" cy="50" r="20" fill="var(--paper)" stroke="var(--gold)" stroke-width="1"/>
+    <text x="50" y="56" text-anchor="middle" font-family="Fraunces, serif" font-weight="700" font-size="17" fill="var(--soil)">MTO</text>
+    <text font-family="Work Sans, sans-serif" font-size="6.6" font-weight="600" letter-spacing="1.2" fill="var(--soil)">
+      <textPath href="#topArcMTA${size}" startOffset="50%" text-anchor="middle">MY TRAVEL ORGANIZER</textPath>
+    </text>
+    <text font-family="Work Sans, sans-serif" font-size="6" font-weight="600" letter-spacing="2.2" fill="var(--clay)">
+      <textPath href="#botArcMTA${size}" startOffset="50%" text-anchor="middle">• BANAUE •</textPath>
+    </text>
+  </svg>`;
+}
+document.getElementById('logoSlot40').innerHTML = logoSVG(40);
+document.getElementById('sheetClose').innerHTML = ICON.x;
+
+/* ---------------- STATE ---------------- */
+const DEFAULT_RATES = { USD:1, PHP:58.5, EUR:0.92, GBP:0.79, JPY:157, KRW:1380, AUD:1.52, SGD:1.34, CNY:7.25 };
+let STATE = {
+  tab: 'overview',
+  loaded: false,
+  flights: [], stays: [], tours: [], budget: [], notes: [], contacts: [], savedTrips: [],
+  documents: [], journal: [], currency: { rates: DEFAULT_RATES, updated: null },
+  noteFilter: 'All',
+};
+let draft = {};
+
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,7);
+const peso = (n) => '$' + (Number(n)||0).toLocaleString('en-US',{maximumFractionDigits:0});
+const fmtDate = (d) => { if(!d) return null; const dt=new Date(d+'T00:00:00'); if(isNaN(dt)) return d; return dt.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}); };
+const fmtShort = (d) => { if(!d) return null; const dt=new Date(d+'T00:00:00'); if(isNaN(dt)) return d; return dt.toLocaleDateString('en-US',{month:'short',day:'numeric'}); };
+const esc = (s) => String(s==null?'':s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+
+/* ---------------- STORAGE (guarded, works offline via local cache) ---------------- */
+const hasStorage = typeof window !== 'undefined' && window.storage && typeof window.storage.get === 'function' && typeof window.storage.set === 'function';
+const LS_PREFIX = 'mto_local_'; // localStorage fallback so the app works fully offline / standalone
+
+async function loadAll(){
+  const keys = ['flights','stays','tours','budget','notes','contacts','savedTrips','documents','journal','currency'];
+  // 1) try local cache first (instant, works offline)
+  keys.forEach(k=>{
+    try{
+      const raw = localStorage.getItem(LS_PREFIX+k);
+      if(raw) STATE[k] = JSON.parse(raw);
+    }catch(e){}
+  });
+  // 2) then sync with remote storage if available (non-blocking for offline use)
+  if(hasStorage){
+    try{
+      await Promise.all(keys.map(async k => {
+        try{
+          const res = await window.storage.get('mto:'+k);
+          if(res && res.value) STATE[k] = JSON.parse(res.value);
+        }catch(e){}
+      }));
+    }catch(e){}
+  }
+  // 3) migrate legacy entries that predate the departure/arrival & start/end date fields
+  //    (older saved flights/tours used a single "date" field) so edits & Overview work correctly
+  let migrated = false;
+  STATE.flights = STATE.flights.map(f=>{
+    if(!f.departDate && f.date){ migrated = true; return {...f, departDate: f.date, departTime: f.departTime || f.time || ''}; }
+    return f;
+  });
+  STATE.tours = STATE.tours.map(t=>{
+    if(!t.startDate && t.date){ migrated = true; return {...t, startDate: t.date}; }
+    return t;
+  });
+  if(migrated){ persist('flights'); persist('tours'); }
+
+  STATE.loaded = true;
+  renderAll();
+}
+function persist(key){
+  try{ localStorage.setItem(LS_PREFIX+key, JSON.stringify(STATE[key])); }catch(e){}
+  if(hasStorage){
+    try{ window.storage.set('mto:'+key, JSON.stringify(STATE[key])).catch(()=>{}); }catch(e){}
+  }
+}
+
+/* ---------------- OFFLINE INDICATOR ---------------- */
+function updateOfflineBadge(){
+  const badge = document.getElementById('offlineBadge');
+  if(navigator.onLine === false) badge.classList.add('show');
+  else badge.classList.remove('show');
+}
+window.addEventListener('online', updateOfflineBadge);
+window.addEventListener('offline', updateOfflineBadge);
+
+/* ---------------- SERVICE WORKER (offline app shell) ---------------- */
+if('serviceWorker' in navigator){
+  window.addEventListener('load', ()=>{
+    navigator.serviceWorker.register('./service-worker.js').catch(()=>{ /* preview sandboxes may block this; app still works via localStorage */ });
+  });
+}
+
+/* ---------------- BUDGET CATEGORIES ---------------- */
+const BUDGET_CATS = ['Food','Transport','Shopping','Sites & Fees','Other'];
+const NOTE_CATS = ['General','Packing List','Local Tips'];
+
+/* ---------------- NAV ---------------- */
+const NAV = [
+  {key:'overview', label:'Overview', icon:'grid'},
+  {key:'flights', label:'Flights', icon:'plane'},
+  {key:'stays', label:'Stays', icon:'building'},
+  {key:'tours', label:'Tours', icon:'map'},
+  {key:'budget', label:'Budget', icon:'wallet'},
+  {key:'notes', label:'Notes', icon:'notes'},
+];
+function renderNav(){
+  document.getElementById('bottomnav').innerHTML = NAV.map(n => `
+    <button class="navbtn ${STATE.tab===n.key?'active':''}" data-nav="${n.key}">
+      <span class="icon">${ICON[n.icon]}</span>
+      <span>${n.label}</span>
+    </button>`).join('');
+}
+
+/* ---------------- SHEET (add / edit forms) ---------------- */
+function openSheet(title, html, onSave, saveEnabled, saveLabel){
+  document.getElementById('sheetTitle').textContent = title;
+  document.getElementById('sheetContent').innerHTML = html + `<button class="btn-primary" id="sheetSaveBtn" ${ (typeof saveEnabled==='function'?saveEnabled():saveEnabled) ? '' : 'disabled'}>${ICON.plus} ${saveLabel||'Save'}</button>`;
+  document.getElementById('sheetOverlay').classList.add('open');
+  const btn = document.getElementById('sheetSaveBtn');
+  btn.onclick = onSave;
+  document.getElementById('sheetContent').querySelectorAll('[data-draft]').forEach(el=>{
+    el.addEventListener('input', ()=>{
+      draft[el.getAttribute('data-draft')] = el.value;
+      const enabled = typeof saveEnabled === 'function' ? saveEnabled() : true;
+      const b = document.getElementById('sheetSaveBtn');
+      if(b) b.disabled = !enabled;
+    });
+  });
+  document.getElementById('sheetContent').querySelectorAll('[data-filedraft]').forEach(el=>{
+    el.addEventListener('change', ()=>{
+      const file = el.files[0];
+      if(!file) return;
+      const key = el.getAttribute('data-filedraft');
+      const reader = new FileReader();
+      reader.onload = () => {
+        draft[key] = reader.result;
+        draft[key+'Name'] = file.name;
+        let note = el.parentElement.querySelector('.file-attached-note');
+        if(!note){
+          note = document.createElement('div');
+          note.className = 'file-attached-note';
+          note.style.cssText = 'font-size:12px;color:var(--soilSoft);margin-top:6px;';
+          el.parentElement.appendChild(note);
+        }
+        note.textContent = 'Attached: ' + file.name;
+      };
+      reader.readAsDataURL(file);
+    });
+  });
+}
+function closeSheet(){
+  document.getElementById('sheetOverlay').classList.remove('open');
+  draft = {};
+}
+document.getElementById('sheetBg').onclick = closeSheet;
+document.getElementById('sheetClose').onclick = closeSheet;
+
+function fieldHTML(label, innerHTML){
+  return `<label class="field"><span class="lbl">${esc(label)}</span>${innerHTML}</label>`;
+}
+function inputHTML(draftKey, type, placeholder, value){
+  return `<input type="${type}" data-draft="${draftKey}" placeholder="${esc(placeholder||'')}" value="${esc(value||'')}" />`;
+}
+function selectHTML(draftKey, options, selected){
+  return `<select data-draft="${draftKey}">${options.map(o=>`<option value="${esc(o)}" ${o===selected?'selected':''}>${esc(o)}</option>`).join('')}</select>`;
+}
+function textareaHTML(draftKey, placeholder, value, rows){
+  return `<textarea data-draft="${draftKey}" rows="${rows||3}" placeholder="${esc(placeholder||'')}">${esc(value||'')}</textarea>`;
+}
+
+/* ---------------- EMPTY STATE ---------------- */
+function emptyHTML(iconKey, title, sub){
+  return `<div class="empty"><div class="circ">${ICON[iconKey]}</div><div class="t">${esc(title)}</div><div class="s">${esc(sub)}</div></div>`;
+}
+function tabHeadHTML(iconKey, title, subtitle, addKey){
+  return `<div class="tabhead">
+    <div class="tabhead-left">
+      <div class="tabhead-icon" style="color:var(--mist)">${ICON[iconKey]}</div>
+      <div class="tabhead-title">${esc(title)}</div>
+    </div>
+    ${addKey ? `<button class="tabhead-add" data-open-sheet="${addKey}">${ICON.plus}</button>` : ''}
+  </div>
+  <div class="tabsub">${esc(subtitle)}</div>`;
+}
+function actionColHTML(list, id){
+  return `<div class="action-col">
+    <button class="del-btn" data-del="${list}:${id}" aria-label="Delete">${ICON.trash}</button>
+    <button class="edit-btn" data-edit="${list}:${id}" aria-label="Edit">${ICON.edit}</button>
+  </div>`;
+}
+
+/* ==================================================
+   PDF EXPORT — hand-built PDF writer, zero dependencies
+   (so trip records survive even if the person later
+   edits or deletes the underlying flight/stay/tour entries)
+================================================== */
+function sanitizeForPDF(s){
+  if(s==null) return '';
+  return String(s)
+    .replace(/₱/g, '$')
+    .replace(/→/g, '-')
+    .replace(/•/g, '-')
+    .replace(/[’‘]/g, "'")
+    .replace(/[“”]/g, '"')
+    .replace(/[^\x00-\xFF]/g, '?');
+}
+function bytesToBase64(bytes){
+  let binary = '';
+  const chunk = 0x8000;
+  for(let i=0;i<bytes.length;i+=chunk){
+    binary += String.fromCharCode.apply(null, bytes.subarray(i, i+chunk));
+  }
+  return btoa(binary);
+}
+function base64ToBytes(b64){
+  const binary = atob(b64);
+  const bytes = new Uint8Array(binary.length);
+  for(let i=0;i<binary.length;i++) bytes[i] = binary.charCodeAt(i);
+  return bytes;
+}
+function strToBytes(str){
+  const bytes = new Uint8Array(str.length);
+  for(let i=0;i<str.length;i++) bytes[i] = str.charCodeAt(i) & 0xFF;
+  return bytes;
+}
+
+function buildPDFBytes(title, sections){
+  const pdfEsc = (s) => sanitizeForPDF(s).replace(/\\/g,'\\\\').replace(/\(/g,'\\(').replace(/\)/g,'\\)');
+  const pageW=612, pageH=792, marginX=50, top=740, bottom=54;
+  const sizeTitle=17, sizeHead=12.5, sizeBody=10;
+  const lhBody=13.5, lhHead=20, gapAfterSection=9, gapAfterTitle=22;
+  const maxCharsBody = Math.floor((pageW-marginX*2)/(sizeBody*0.52));
+  const maxCharsHead = Math.floor((pageW-marginX*2)/(sizeHead*0.55));
+
+  function wrap(text, maxChars){
+    text = sanitizeForPDF(text);
+    if(text.length<=maxChars) return [text];
+    const words = text.split(' ');
+    let lines=[], cur='';
+    words.forEach(w=>{
+      const test = cur ? cur+' '+w : w;
+      if(test.length>maxChars){ if(cur) lines.push(cur); cur=w; } else cur=test;
+    });
+    if(cur) lines.push(cur);
+    return lines;
+  }
+
+  let blocks=[{t:'title', text:title}];
+  sections.forEach(sec=>{
+    if(!sec.lines || !sec.lines.length) return;
+    wrap(sec.heading, maxCharsHead).forEach((w,i)=> blocks.push({t:'head', text:w}));
+    sec.lines.forEach(l=>{ wrap(l, maxCharsBody).forEach(w=> blocks.push({t:'body', text:w})); });
+    blocks.push({t:'gap'});
+  });
+
+  let pages=[], cur=[], y=top;
+  function hgt(b){ if(b.t==='title') return gapAfterTitle; if(b.t==='head') return lhHead; if(b.t==='gap') return gapAfterSection; return lhBody; }
+  blocks.forEach(b=>{
+    const height = hgt(b);
+    if(y-height<bottom){ pages.push(cur); cur=[]; y=top; }
+    if(b.t!=='gap') cur.push({text:b.text, size: b.t==='title'?sizeTitle:(b.t==='head'?sizeHead:sizeBody), bold: b.t!=='body', y});
+    y -= height;
+  });
+  if(cur.length) pages.push(cur);
+  if(pages.length===0) pages.push([]);
+
+  const numPages = pages.length;
+  const totalObjs = 4 + 2*numPages;
+  const objs = new Array(totalObjs);
+  objs[0] = `1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n`;
+  const kids = []; for(let i=0;i<numPages;i++) kids.push(`${5+i} 0 R`);
+  objs[1] = `2 0 obj\n<< /Type /Pages /Kids [${kids.join(' ')}] /Count ${numPages} >>\nendobj\n`;
+  objs[2] = `3 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>\nendobj\n`;
+  objs[3] = `4 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>\nendobj\n`;
+  for(let i=0;i<numPages;i++){
+    const pageObjNum = 5+i, contentObjNum = 5+numPages+i;
+    objs[pageObjNum-1] = `${pageObjNum} 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${pageW} ${pageH}] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents ${contentObjNum} 0 R >>\nendobj\n`;
+  }
+  for(let i=0;i<numPages;i++){
+    const contentObjNum = 5+numPages+i;
+    let stream = 'BT\n';
+    pages[i].forEach(line=>{
+      const font = line.bold ? '/F1' : '/F2';
+      stream += `${font} ${line.size} Tf\n1 0 0 1 ${marginX} ${line.y.toFixed(2)} Tm\n(${pdfEsc(line.text)}) Tj\n`;
+    });
+    stream += 'ET';
+    objs[contentObjNum-1] = `${contentObjNum} 0 obj\n<< /Length ${stream.length} >>\nstream\n${stream}\nendstream\nendobj\n`;
+  }
+
+  let pdf = '%PDF-1.4\n';
+  const offsets=[0];
+  for(let i=0;i<totalObjs;i++){ offsets.push(pdf.length); pdf += objs[i]; }
+  const xrefStart = pdf.length;
+  pdf += `xref\n0 ${totalObjs+1}\n0000000000 65535 f \n`;
+  for(let i=1;i<=totalObjs;i++) pdf += String(offsets[i]).padStart(10,'0') + ' 00000 n \n';
+  pdf += `trailer\n<< /Size ${totalObjs+1} /Root 1 0 R >>\nstartxref\n${xrefStart}\n%%EOF`;
+  return pdf;
+}
+
+function buildTripPDFSections(){
+  const auto = computeAutoTotals();
+  const manualTotal = STATE.budget.reduce((s,b)=>s+(Number(b.amount)||0),0);
+  const grand = manualTotal + auto.flights + auto.stays + auto.tours;
+  const php = (n) => '$' + (Number(n)||0).toLocaleString('en-US',{maximumFractionDigits:0});
+  const sections = [];
+
+  const events = [];
+  STATE.flights.forEach(f=> f.departDate && events.push({date:f.departDate, text:`Flight: ${f.from||'?'} to ${f.to||'?'} - ${[f.airline,f.flightNo].filter(Boolean).join(' ')}`}));
+  STATE.stays.forEach(s=> s.checkIn && events.push({date:s.checkIn, text:`Stay: ${s.name}${s.location?' - '+s.location:''} (check-in ${fmtDate(s.checkIn)}${s.checkOut?' to '+fmtDate(s.checkOut):''})`}));
+  STATE.tours.forEach(t=> t.startDate && events.push({date:t.startDate, text:`Tour: ${t.name}${t.provider?' - '+t.provider:''} (${fmtDate(t.startDate)}${t.endDate&&t.endDate!==t.startDate?' to '+fmtDate(t.endDate):''})`}));
+  events.sort((a,b)=>a.date.localeCompare(b.date));
+  sections.push({heading:'Trip Sequence', lines: events.length ? events.map(e=>`${fmtDate(e.date)} - ${e.text}`) : ['No dated items yet.']});
+
+  sections.push({heading:'Flights', lines: STATE.flights.length ? STATE.flights.map(f=>
+    `${[f.airline,f.flightNo].filter(Boolean).join(' ')||'Flight'} | ${f.from||'?'} to ${f.to||'?'} | Depart ${fmtDate(f.departDate)}${f.departTime?' '+f.departTime:''}${f.arriveDate?' | Arrive '+fmtDate(f.arriveDate)+(f.arriveTime?' '+f.arriveTime:''):''}${f.conf?' | Conf: '+f.conf:''}${f.cost?' | '+php(f.cost):''}`
+  ) : ['No flights added.']});
+
+  sections.push({heading:'Accommodation', lines: STATE.stays.length ? STATE.stays.map(s=>
+    `${s.name}${s.location?' - '+s.location:''} | ${fmtDate(s.checkIn)} to ${fmtDate(s.checkOut)}${s.conf?' | Conf: '+s.conf:''}${s.cost?' | '+php(s.cost):''}`
+  ) : ['No accommodation added.']});
+
+  sections.push({heading:'Booked Tour Packages', lines: STATE.tours.length ? STATE.tours.map(t=>
+    `${t.name}${t.provider?' - '+t.provider:''} | ${fmtDate(t.startDate)}${t.endDate&&t.endDate!==t.startDate?' to '+fmtDate(t.endDate):''}${t.time?' | '+t.time:''}${t.meet?' | Meet: '+t.meet:''}${t.conf?' | Conf: '+t.conf:''}${t.cost?' | '+php(t.cost):''}`
+  ) : ['No tours booked.']});
+
+  let budgetLines = [
+    `Total trip cost: ${php(grand)}`,
+    `Flights ${php(auto.flights)}  |  Stays ${php(auto.stays)}  |  Tours ${php(auto.tours)}  |  Extras ${php(manualTotal)}`,
+  ];
+  if(STATE.budget.length){
+    budgetLines.push('Extra expenses:');
+    STATE.budget.forEach(b=> budgetLines.push(`- ${b.description||b.category} (${b.category}) - ${php(b.amount)}${b.date?' - '+fmtDate(b.date):''}`));
+  }
+  sections.push({heading:'Budget Summary', lines: budgetLines});
+
+  sections.push({heading:'Notes', lines: STATE.notes.length ? STATE.notes.map(n=>
+    `[${n.category}] ${n.text}${n.category==='Packing List' ? (n.done?' (packed)':' (not packed)') : ''}`
+  ) : ['No notes added.']});
+
+  sections.push({heading:'Travel Documents', lines: STATE.documents.length ? STATE.documents.map(d=>
+    `${d.label} (${d.type})${d.holder?' - '+d.holder:''}${d.docNumber?' - No. '+d.docNumber:''}${d.expiryDate?' - Expires '+fmtDate(d.expiryDate):''}`
+  ) : ['No documents added.']});
+
+  sections.push({heading:'Travel Journal', lines: STATE.journal.length ? STATE.journal.map(j=>
+    `${fmtDate(j.date)}${j.title?' - '+j.title:''}: ${j.text}`
+  ) : ['No journal entries yet.']});
+
+  sections.push({heading:'Emergency Contacts', lines: STATE.contacts.length ? STATE.contacts.map(c=>
+    `${c.name}${c.relation?' ('+c.relation+')':''} - ${c.phone}${c.altPhone?' / '+c.altPhone:''}${c.notes?' - '+c.notes:''}`
+  ) : ['No emergency contacts added.']});
+
+  return sections;
+}
+
+function downloadPDFBytes(bytes, filename){
+  const blob = new Blob([bytes], {type:'application/pdf'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(()=>URL.revokeObjectURL(url), 4000);
+}
+function safeFileName(name){
+  return (name||'trip').replace(/[^a-z0-9\- ]/gi,'').trim().replace(/\s+/g,' ') || 'trip';
+}
+
+function openSavePdfSheet(){
+  draft = { name: `My Trip - ${fmtDate(new Date().toISOString().slice(0,10))}` };
+  const canSave = ()=> draft.name && draft.name.trim();
+  const html = fieldHTML('Name this trip', inputHTML('name','text','e.g. Banaue Family Trip 2026', draft.name))
+    + `<div style="font-size:12px;color:var(--soilSoft);margin:-4px 0 14px;line-height:1.5;">This saves a full copy of your flights, stays, tours, budget, notes and emergency contacts as a PDF, kept in the Saved Trips folder under Notes — safe even if you edit or delete details later.</div>`;
+  openSheet('Save trip as PDF', html, ()=>{
+    if(!draft.name || !draft.name.trim()) return;
+    saveTripAsPDF(draft.name.trim());
+    closeSheet();
+  }, canSave, 'Save PDF');
+}
+function saveTripAsPDF(name){
+  const sections = buildTripPDFSections();
+  const pdfStr = buildPDFBytes(name, sections);
+  const bytes = strToBytes(pdfStr);
+  downloadPDFBytes(bytes, safeFileName(name) + '.pdf');
+  const base64 = bytesToBase64(bytes);
+  STATE.savedTrips.push({ id: uid(), name, date: new Date().toISOString().slice(0,10), pdfBase64: base64 });
+  persist('savedTrips');
+  renderAll();
+}
+
+/* ==================================================
+   TAB: FLIGHTS  (departure date + arrival date)
+================================================== */
+function renderFlights(){
+  const sorted = [...STATE.flights].sort((a,b)=>(a.departDate||'9999').localeCompare(b.departDate||'9999'));
+  let html = tabHeadHTML('plane','Flights','Every departure & arrival, in one place','flight');
+  if(sorted.length===0){ html += emptyHTML('plane','No flights yet','Add your first flight to start building your itinerary.'); }
+  else {
+    sorted.forEach(f=>{
+      html += `<div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+          <div>
+            <div class="serif" style="font-weight:600;font-size:16px;">${esc(f.from||'—')} <span class="icon" style="color:var(--bark)">${ICON.chevron}</span> ${esc(f.to||'—')}</div>
+            <div style="font-size:12.5px;color:var(--soilSoft);margin-top:2px;">${esc(f.airline)}${f.flightNo?` · ${esc(f.flightNo)}`:''}</div>
+          </div>
+          ${actionColHTML('flights', f.id)}
+        </div>
+        <div class="meta-row">${ICON.calendar}<span>Departs ${esc(fmtDate(f.departDate))}${f.departTime?` · ${esc(f.departTime)}`:''}</span></div>
+        ${f.arriveDate?`<div class="meta-row">${ICON.calendar}<span>Arrives ${esc(fmtDate(f.arriveDate))}${f.arriveTime?` · ${esc(f.arriveTime)}`:''}</span></div>`:''}
+        ${f.conf?`<div class="meta-row">${ICON.ticket}<span>Confirmation: ${esc(f.conf)}</span></div>`:''}
+        ${f.cost?`<div class="cost-pill">${peso(f.cost)}</div>`:''}
+      </div>`;
+    });
+  }
+  return html;
+}
+function openFlightSheet(existing){
+  draft = existing ? {...existing} : {airline:'',flightNo:'',from:'',to:'',departDate:'',departTime:'',arriveDate:'',arriveTime:'',conf:'',cost:''};
+  const canSave = ()=> draft.airline && draft.departDate;
+  const html = fieldHTML('Airline', inputHTML('airline','text','e.g. Philippine Airlines', draft.airline))
+    + fieldHTML('Flight number', inputHTML('flightNo','text','e.g. PR 1234', draft.flightNo))
+    + `<div class="row2"><div>${fieldHTML('From', inputHTML('from','text','MNL', draft.from))}</div><div>${fieldHTML('To', inputHTML('to','text','Banaue', draft.to))}</div></div>`
+    + `<div class="row2"><div>${fieldHTML('Departure date', inputHTML('departDate','date','', draft.departDate))}</div><div>${fieldHTML('Departure time', inputHTML('departTime','time','', draft.departTime))}</div></div>`
+    + `<div class="row2"><div>${fieldHTML('Arrival date', inputHTML('arriveDate','date','', draft.arriveDate))}</div><div>${fieldHTML('Arrival time', inputHTML('arriveTime','time','', draft.arriveTime))}</div></div>`
+    + fieldHTML('Confirmation code', inputHTML('conf','text','', draft.conf))
+    + fieldHTML('Cost ($)', inputHTML('cost','number','0', draft.cost));
+  openSheet(existing?'Edit flight':'Add flight', html, ()=>{
+    if(!draft.airline || !draft.departDate) return;
+    if(existing) STATE.flights = STATE.flights.map(x=> x.id===existing.id ? {...draft, id: existing.id} : x);
+    else STATE.flights.push({...draft, id: uid()});
+    persist('flights'); closeSheet(); renderAll();
+  }, canSave, existing?'Save changes':'Save flight');
+}
+
+/* ==================================================
+   TAB: ACCOMMODATION
+================================================== */
+function renderStays(){
+  const sorted = [...STATE.stays].sort((a,b)=>(a.checkIn||'9999').localeCompare(b.checkIn||'9999'));
+  let html = tabHeadHTML('building','Accommodation',"Where you're resting your head",'stay');
+  if(sorted.length===0){ html += emptyHTML('building','No stays yet','Add a homestay, inn, or hotel to track your nights.'); }
+  else {
+    sorted.forEach(s=>{
+      html += `<div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+          <div>
+            <div class="serif" style="font-weight:600;font-size:16px;">${esc(s.name)}</div>
+            ${s.location?`<div style="font-size:12.5px;color:var(--soilSoft);margin-top:2px;">${esc(s.location)}</div>`:''}
+          </div>
+          ${actionColHTML('stays', s.id)}
+        </div>
+        <div class="meta-row">${ICON.calendar}<span>${esc(fmtDate(s.checkIn)||'—')} → ${esc(fmtDate(s.checkOut)||'—')}</span></div>
+        ${s.conf?`<div class="meta-row">${ICON.ticket}<span>Confirmation: ${esc(s.conf)}</span></div>`:''}
+        ${s.cost?`<div class="cost-pill">${peso(s.cost)}</div>`:''}
+      </div>`;
+    });
+  }
+  return html;
+}
+function openStaySheet(existing){
+  draft = existing ? {...existing} : {name:'',location:'',checkIn:'',checkOut:'',conf:'',cost:''};
+  const canSave = ()=> draft.name && draft.checkIn;
+  const html = fieldHTML('Property name', inputHTML('name','text','e.g. Banaue View Inn', draft.name))
+    + fieldHTML('Location', inputHTML('location','text','e.g. Poblacion, Banaue', draft.location))
+    + `<div class="row2"><div>${fieldHTML('Check-in', inputHTML('checkIn','date','', draft.checkIn))}</div><div>${fieldHTML('Check-out', inputHTML('checkOut','date','', draft.checkOut))}</div></div>`
+    + fieldHTML('Confirmation code', inputHTML('conf','text','', draft.conf))
+    + fieldHTML('Cost ($)', inputHTML('cost','number','0', draft.cost));
+  openSheet(existing?'Edit accommodation':'Add accommodation', html, ()=>{
+    if(!draft.name || !draft.checkIn) return;
+    if(existing) STATE.stays = STATE.stays.map(x=> x.id===existing.id ? {...draft, id: existing.id} : x);
+    else STATE.stays.push({...draft, id: uid()});
+    persist('stays'); closeSheet(); renderAll();
+  }, canSave, existing?'Save changes':'Save stay');
+}
+
+/* ==================================================
+   TAB: BOOKED TOUR PACKAGES  (start date + end date)
+================================================== */
+function renderTours(){
+  const sorted = [...STATE.tours].sort((a,b)=>(a.startDate||'9999').localeCompare(b.startDate||'9999'));
+  let html = tabHeadHTML('map','Booked Tour Packages','Treks, guides & experiences','tour');
+  if(sorted.length===0){ html += emptyHTML('map','No tours booked yet','Add a rice terrace trek or cultural tour package.'); }
+  else {
+    sorted.forEach(t=>{
+      html += `<div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+          <div>
+            <div class="serif" style="font-weight:600;font-size:16px;">${esc(t.name)}</div>
+            ${t.provider?`<div style="font-size:12.5px;color:var(--soilSoft);margin-top:2px;">${esc(t.provider)}</div>`:''}
+          </div>
+          ${actionColHTML('tours', t.id)}
+        </div>
+        <div class="meta-row">${ICON.calendar}<span>${esc(fmtDate(t.startDate))}${t.endDate && t.endDate!==t.startDate ? ` → ${esc(fmtDate(t.endDate))}` : ''}</span></div>
+        ${t.time?`<div class="meta-row">${ICON.clock}<span>${esc(t.time)}</span></div>`:''}
+        ${t.meet?`<div class="meta-row">${ICON.pin}<span>${esc(t.meet)}</span></div>`:''}
+        ${t.conf?`<div class="meta-row">${ICON.ticket}<span>Confirmation: ${esc(t.conf)}</span></div>`:''}
+        ${t.cost?`<div class="cost-pill">${peso(t.cost)}</div>`:''}
+      </div>`;
+    });
+  }
+  return html;
+}
+function openTourSheet(existing){
+  draft = existing ? {...existing} : {name:'',provider:'',startDate:'',endDate:'',time:'',meet:'',conf:'',cost:''};
+  const canSave = ()=> draft.name && draft.startDate;
+  const html = fieldHTML('Package name', inputHTML('name','text','e.g. Banaue Rice Terraces Trek', draft.name))
+    + fieldHTML('Tour provider', inputHTML('provider','text','e.g. Jony JJ Travel & Tours', draft.provider))
+    + `<div class="row2"><div>${fieldHTML('Start date', inputHTML('startDate','date','', draft.startDate))}</div><div>${fieldHTML('End date', inputHTML('endDate','date','', draft.endDate))}</div></div>`
+    + fieldHTML('Meeting time', inputHTML('time','time','', draft.time))
+    + fieldHTML('Meeting point', inputHTML('meet','text','e.g. Banaue Viewpoint', draft.meet))
+    + fieldHTML('Confirmation code', inputHTML('conf','text','', draft.conf))
+    + fieldHTML('Cost ($)', inputHTML('cost','number','0', draft.cost));
+  openSheet(existing?'Edit tour package':'Add tour package', html, ()=>{
+    if(!draft.name || !draft.startDate) return;
+    if(existing) STATE.tours = STATE.tours.map(x=> x.id===existing.id ? {...draft, id: existing.id} : x);
+    else STATE.tours.push({...draft, id: uid()});
+    persist('tours'); closeSheet(); renderAll();
+  }, canSave, existing?'Save changes':'Save tour');
+}
+
+/* ==================================================
+   TAB: BUDGET TRACKER
+================================================== */
+function computeAutoTotals(){
+  return {
+    flights: STATE.flights.reduce((s,f)=>s+(Number(f.cost)||0),0),
+    stays: STATE.stays.reduce((s,x)=>s+(Number(x.cost)||0),0),
+    tours: STATE.tours.reduce((s,x)=>s+(Number(x.cost)||0),0),
+  };
+}
+const CURRENCIES = ['USD','PHP','EUR','GBP','JPY','KRW','AUD','SGD','CNY'];
+function selectPlainHTML(id, options, selected){
+  return `<select id="${id}">${options.map(o=>`<option value="${o}" ${o===selected?'selected':''}>${o}</option>`).join('')}</select>`;
+}
+function renderCurrencyConverter(){
+  const updated = STATE.currency && STATE.currency.updated;
+  return `<div class="card" style="margin-top:14px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+      <div class="serif" style="font-weight:600;font-size:15px;display:flex;align-items:center;gap:6px;">${ICON.currency} Currency Converter</div>
+      <button data-refresh-rates style="background:var(--fog);border:none;border-radius:8px;padding:5px 9px;font-size:11px;font-weight:600;color:var(--soilSoft);display:flex;align-items:center;gap:4px;">${ICON.download} Refresh</button>
+    </div>
+    <div class="row2">
+      <div class="field"><span class="lbl">Amount</span><input type="number" id="curAmount" value="100" /></div>
+      <div class="field"><span class="lbl">From</span>${selectPlainHTML('curFrom', CURRENCIES, 'USD')}</div>
+    </div>
+    <div class="field"><span class="lbl">To</span>${selectPlainHTML('curTo', CURRENCIES, 'PHP')}</div>
+    <div style="background:var(--fog);border-radius:10px;padding:12px;text-align:center;">
+      <div id="curResult" class="serif" style="font-weight:700;font-size:20px;color:var(--terraceDeep);">—</div>
+      <div style="font-size:10.5px;color:var(--soilSoft);margin-top:3px;">${updated ? 'Rates last updated '+esc(fmtDate(updated)) : 'Approximate rates — connect to the internet to update'}</div>
+    </div>
+  </div>`;
+}
+function recomputeCurrency(){
+  const amtEl = document.getElementById('curAmount');
+  const fromEl = document.getElementById('curFrom');
+  const toEl = document.getElementById('curTo');
+  const resultEl = document.getElementById('curResult');
+  if(!amtEl || !fromEl || !toEl || !resultEl) return;
+  const amt = Number(amtEl.value) || 0;
+  const rates = (STATE.currency && STATE.currency.rates) || DEFAULT_RATES;
+  const from = fromEl.value, to = toEl.value;
+  const usdAmt = amt / (rates[from] || 1);
+  const result = usdAmt * (rates[to] || 1);
+  resultEl.textContent = `${amt.toLocaleString()} ${from} = ${result.toLocaleString(undefined,{maximumFractionDigits:2})} ${to}`;
+}
+async function refreshRates(){
+  if(typeof navigator !== 'undefined' && navigator.onLine === false) return;
+  try{
+    const res = await fetch('https://open.er-api.com/v6/latest/USD');
+    if(!res.ok) return;
+    const data = await res.json();
+    if(data && data.rates){
+      STATE.currency = { rates: data.rates, updated: new Date().toISOString().slice(0,10) };
+      persist('currency');
+      if(STATE.tab==='budget') renderAll();
+    }
+  }catch(e){ /* offline, blocked, or no CORS access — silently keep cached/fallback rates */ }
+}
+
+function renderBudget(){
+  const auto = computeAutoTotals();
+  const manual = STATE.budget.reduce((s,b)=>s+(Number(b.amount)||0),0);
+  const grand = manual + auto.flights + auto.stays + auto.tours;
+  let html = tabHeadHTML('wallet','Budget Tracker','Every dollar, accounted for','budget');
+  html += `<div class="card" style="background:var(--terraceDeep);border:none;">
+    <div class="uc" style="font-size:11.5px;color:var(--goldSoft);font-weight:600;">Total trip cost</div>
+    <div class="serif" style="font-weight:800;font-size:30px;color:var(--mist);margin-top:2px;">${peso(grand)}</div>
+    <div style="display:flex;gap:14px;margin-top:10px;flex-wrap:wrap;">
+      ${['Flights','Stays','Tours','Extras'].map((l,i)=>{
+        const v = [auto.flights,auto.stays,auto.tours,manual][i];
+        return `<div><div style="font-size:10.5px;color:var(--terraceLight);font-weight:600;">${l}</div><div class="mono" style="font-size:13px;color:var(--mist);">${peso(v)}</div></div>`;
+      }).join('')}
+    </div>
+  </div>`;
+  html += renderCurrencyConverter();
+  html += `<div class="serif" style="font-weight:600;font-size:15px;margin:18px 0 8px;">Extra expenses</div>`;
+  const sorted = [...STATE.budget].sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+  if(sorted.length===0){ html += emptyHTML('wallet','No extra expenses yet','Log food, transport, souvenirs and other day-to-day spending.'); }
+  else {
+    sorted.forEach(b=>{
+      html += `<div class="card" style="display:flex;align-items:center;gap:12px;">
+        <div style="width:38px;height:38px;border-radius:10px;background:var(--fog);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--terraceDeep);">${ICON.tag}</div>
+        <div style="flex:1;">
+          <div style="font-weight:600;font-size:14px;">${esc(b.description||b.category)}</div>
+          <div style="font-size:12px;color:var(--soilSoft);">${esc(b.category)}${b.date?` · ${esc(fmtShort(b.date))}`:''}</div>
+        </div>
+        <div class="mono" style="font-weight:500;font-size:14px;color:var(--clay);">${peso(b.amount)}</div>
+        ${actionColHTML('budget', b.id)}
+      </div>`;
+    });
+  }
+  return html;
+}
+function openBudgetSheet(existing){
+  draft = existing ? {...existing} : {category:'Food',description:'',amount:'',date:''};
+  const canSave = ()=> !!draft.amount;
+  const html = fieldHTML('Category', selectHTML('category', BUDGET_CATS, draft.category))
+    + fieldHTML('Description', inputHTML('description','text','e.g. Woodcarving souvenir', draft.description))
+    + `<div class="row2"><div>${fieldHTML('Amount ($)', inputHTML('amount','number','0', draft.amount))}</div><div>${fieldHTML('Date', inputHTML('date','date','', draft.date))}</div></div>`;
+  openSheet(existing?'Edit expense':'Add expense', html, ()=>{
+    if(!draft.amount) return;
+    if(!draft.category) draft.category='Food';
+    if(existing) STATE.budget = STATE.budget.map(x=> x.id===existing.id ? {...draft, id: existing.id} : x);
+    else STATE.budget.push({...draft, id: uid()});
+    persist('budget'); closeSheet(); renderAll();
+  }, canSave, existing?'Save changes':'Save expense');
+}
+
+/* ==================================================
+   TAB: NOTES
+================================================== */
+function renderEmergencyContacts(){
+  let html = `<div style="display:flex;align-items:center;justify-content:space-between;margin:2px 0 10px;">
+    <div class="serif" style="font-weight:600;font-size:15px;display:flex;align-items:center;gap:6px;color:var(--clay);">
+      <span style="color:var(--clay);">${ICON.alert}</span> Emergency Contacts
+    </div>
+    <button class="tabhead-add" style="width:30px;height:30px;" data-open-sheet="contact" aria-label="Add contact">${ICON.plus}</button>
+  </div>`;
+  if(STATE.contacts.length===0){
+    html += `<div class="card" style="border-color:var(--clay);border-style:dashed;text-align:center;padding:16px;">
+      <div style="font-size:12.5px;color:var(--soilSoft);">No emergency contacts saved yet — add a family member, your guide, or local hospital / police number.</div>
+    </div>`;
+  } else {
+    STATE.contacts.forEach(c=>{
+      html += `<div class="card" style="border-color:var(--clay);">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+          <div>
+            <div style="font-weight:600;font-size:14px;">${esc(c.name)}</div>
+            ${c.relation?`<div style="font-size:12px;color:var(--soilSoft);">${esc(c.relation)}</div>`:''}
+          </div>
+          ${actionColHTML('contacts', c.id)}
+        </div>
+        ${c.phone?`<div class="meta-row">${ICON.phone}<a href="tel:${esc(c.phone)}" style="color:var(--clay);text-decoration:none;font-weight:600;">${esc(c.phone)}</a></div>`:''}
+        ${c.altPhone?`<div class="meta-row">${ICON.phone}<a href="tel:${esc(c.altPhone)}" style="color:var(--soilSoft);text-decoration:none;">${esc(c.altPhone)} (alternate)</a></div>`:''}
+        ${c.notes?`<div class="meta-row" style="align-items:flex-start;"><span style="opacity:0;width:13px;flex-shrink:0;">•</span><span>${esc(c.notes)}</span></div>`:''}
+      </div>`;
+    });
+  }
+  return html;
+}
+function openContactSheet(existing){
+  draft = existing ? {...existing} : {name:'',relation:'',phone:'',altPhone:'',notes:''};
+  const canSave = ()=> draft.name && draft.phone;
+  const html = fieldHTML('Name', inputHTML('name','text','e.g. Josephine Laurente', draft.name))
+    + fieldHTML('Relationship / role', inputHTML('relation','text','e.g. Sister, Tour Guide, Local Police', draft.relation))
+    + fieldHTML('Phone number', inputHTML('phone','tel','e.g. 0917 123 4567', draft.phone))
+    + fieldHTML('Alternate phone', inputHTML('altPhone','tel','', draft.altPhone))
+    + fieldHTML('Notes', textareaHTML('notes', 'e.g. Available 24/7, based in Banaue Poblacion', draft.notes, 2));
+  openSheet(existing?'Edit contact':'Add emergency contact', html, ()=>{
+    if(!draft.name || !draft.phone) return;
+    if(existing) STATE.contacts = STATE.contacts.map(x=> x.id===existing.id ? {...draft, id: existing.id} : x);
+    else STATE.contacts.push({...draft, id: uid()});
+    persist('contacts'); closeSheet(); renderAll();
+  }, canSave, existing?'Save changes':'Save contact');
+}
+
+function renderSavedTrips(){
+  let html = `<div style="display:flex;align-items:center;justify-content:space-between;margin:2px 0 10px;">
+    <div class="serif" style="font-weight:600;font-size:15px;display:flex;align-items:center;gap:6px;">
+      <span style="color:var(--gold);">${ICON.folder}</span> Saved Trips
+    </div>
+  </div>`;
+  const sorted = [...STATE.savedTrips].sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+  if(sorted.length===0){
+    html += `<div class="card" style="border-style:dashed;text-align:center;padding:16px;">
+      <div style="font-size:12.5px;color:var(--soilSoft);">No saved trips yet. Use "Save trip as PDF" on the Overview tab to keep a permanent copy here.</div>
+    </div>`;
+  } else {
+    sorted.forEach(t=>{
+      html += `<div class="card" style="display:flex;align-items:center;gap:12px;">
+        <div style="width:38px;height:38px;border-radius:10px;background:var(--fog);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--gold);">${ICON.folder}</div>
+        <div style="flex:1;">
+          <div style="font-weight:600;font-size:14px;">${esc(t.name)}</div>
+          <div style="font-size:12px;color:var(--soilSoft);">Saved ${esc(fmtDate(t.date))}</div>
+        </div>
+        <button class="edit-btn" data-download-trip="${t.id}" aria-label="Download" style="color:var(--terraceDeep);">${ICON.download}</button>
+        <button class="del-btn" data-del="savedTrips:${t.id}" aria-label="Delete">${ICON.trash}</button>
+      </div>`;
+    });
+  }
+  return html;
+}
+
+function expiryStatus(expiryDate){
+  if(!expiryDate) return {level:'none', text:'', color:'inherit'};
+  const days = Math.round((new Date(expiryDate+'T00:00:00') - new Date(new Date().toISOString().slice(0,10)+'T00:00:00'))/86400000);
+  if(days<0) return {level:'expired', text:`Expired ${fmtDate(expiryDate)}`, color:'var(--clay)', days};
+  if(days<=90) return {level:'soon', text:`Expires ${fmtDate(expiryDate)} · ${days} day${days===1?'':'s'} left`, color:'var(--clay)', days};
+  return {level:'ok', text:`Valid until ${fmtDate(expiryDate)}`, color:'var(--soilSoft)', days};
+}
+function urgentDocument(){
+  let worst = null;
+  STATE.documents.forEach(d=>{
+    if(!d.expiryDate) return;
+    const s = expiryStatus(d.expiryDate);
+    if(s.level==='expired' || s.level==='soon'){ if(!worst || s.days<worst.days) worst = {...d, days: s.days}; }
+  });
+  return worst;
+}
+const DOC_TYPES = ['Passport','Visa','Travel Insurance','Other ID','Other'];
+function renderDocuments(){
+  let html = `<div style="display:flex;align-items:center;justify-content:space-between;margin:20px 0 10px;">
+    <div class="serif" style="font-weight:600;font-size:15px;display:flex;align-items:center;gap:6px;">${ICON.idcard} Travel Documents</div>
+    <button class="tabhead-add" style="width:30px;height:30px;" data-open-sheet="document" aria-label="Add document">${ICON.plus}</button>
+  </div>`;
+  if(STATE.documents.length===0){
+    html += `<div class="card" style="border-style:dashed;text-align:center;padding:16px;"><div style="font-size:12.5px;color:var(--soilSoft);">Add passport, visa, or insurance details — you'll get an expiry warning here and on Overview as the date approaches.</div></div>`;
+  } else {
+    const sorted = [...STATE.documents].sort((a,b)=>(a.expiryDate||'9999').localeCompare(b.expiryDate||'9999'));
+    sorted.forEach(d=>{
+      const status = expiryStatus(d.expiryDate);
+      html += `<div class="card"${status.level==='expired'||status.level==='soon' ? ` style="border-color:var(--clay);"` : ''}>
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+          <div>
+            <div style="font-weight:600;font-size:14px;">${esc(d.label)}</div>
+            <div style="font-size:12px;color:var(--soilSoft);">${esc(d.type)}${d.holder?' · '+esc(d.holder):''}</div>
+          </div>
+          ${actionColHTML('documents', d.id)}
+        </div>
+        ${d.docNumber?`<div class="meta-row">${ICON.tag}<span>No. ${esc(d.docNumber)}</span></div>`:''}
+        ${d.expiryDate?`<div class="meta-row" style="color:${status.color};font-weight:${status.level!=='ok'?'600':'400'};">${ICON.alert}<span>${esc(status.text)}</span></div>`:''}
+        ${d.fileData?`<div style="margin-top:8px;"><a href="${d.fileData}" download="${esc(d.fileDataName||'document')}" style="font-size:12px;color:var(--terraceDeep);font-weight:600;text-decoration:none;display:inline-flex;align-items:center;gap:5px;">${ICON.download} ${esc(d.fileDataName||'View attachment')}</a></div>`:''}
+      </div>`;
+    });
+  }
+  return html;
+}
+function openDocSheet(existing){
+  draft = existing ? {...existing} : {label:'', type:'Passport', holder:'', docNumber:'', expiryDate:'', fileData:'', fileDataName:''};
+  const canSave = ()=> !!draft.label;
+  const html = fieldHTML('Document name', inputHTML('label','text',"e.g. Josephine's Passport", draft.label))
+    + fieldHTML('Type', selectHTML('type', DOC_TYPES, draft.type))
+    + fieldHTML('Holder / traveler', inputHTML('holder','text','e.g. Josephine Laurente', draft.holder))
+    + fieldHTML('Document number', inputHTML('docNumber','text','', draft.docNumber))
+    + fieldHTML('Expiry date', inputHTML('expiryDate','date','', draft.expiryDate))
+    + fieldHTML('Attach photo or scan (optional)', `<input type="file" accept="image/*,application/pdf" data-filedraft="fileData" />${draft.fileDataName?`<div class="file-attached-note" style="font-size:12px;color:var(--soilSoft);margin-top:6px;">Attached: ${esc(draft.fileDataName)}</div>`:''}`);
+  openSheet(existing?'Edit document':'Add document', html, ()=>{
+    if(!draft.label) return;
+    if(existing) STATE.documents = STATE.documents.map(x=> x.id===existing.id ? {...draft, id: existing.id} : x);
+    else STATE.documents.push({...draft, id: uid()});
+    persist('documents'); closeSheet(); renderAll();
+  }, canSave, existing?'Save changes':'Save document');
+}
+
+function renderJournal(){
+  let html = `<div style="display:flex;align-items:center;justify-content:space-between;margin:20px 0 10px;">
+    <div class="serif" style="font-weight:600;font-size:15px;display:flex;align-items:center;gap:6px;">${ICON.book} Travel Journal</div>
+    <button class="tabhead-add" style="width:30px;height:30px;" data-open-sheet="journal" aria-label="Add journal entry">${ICON.plus}</button>
+  </div>`;
+  const sorted = [...STATE.journal].sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+  if(sorted.length===0){
+    html += `<div class="card" style="border-style:dashed;text-align:center;padding:16px;"><div style="font-size:12.5px;color:var(--soilSoft);">Capture memories, highlights, or reflections from each day of your trip.</div></div>`;
+  } else {
+    sorted.forEach(j=>{
+      html += `<div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+          <div>
+            ${j.title?`<div style="font-weight:600;font-size:14px;">${esc(j.title)}</div>`:''}
+            <div class="mono" style="font-size:11.5px;color:var(--clay);margin-top:${j.title?'2px':'0'};">${esc(fmtDate(j.date))}</div>
+          </div>
+          ${actionColHTML('journal', j.id)}
+        </div>
+        <div style="font-size:13.5px;margin-top:8px;line-height:1.5;white-space:pre-wrap;">${esc(j.text)}</div>
+      </div>`;
+    });
+  }
+  return html;
+}
+function openJournalSheet(existing){
+  draft = existing ? {...existing} : {date: new Date().toISOString().slice(0,10), title:'', text:''};
+  const canSave = ()=> !!(draft.text && draft.text.trim());
+  const html = fieldHTML('Date', inputHTML('date','date','', draft.date))
+    + fieldHTML('Title (optional)', inputHTML('title','text','e.g. First day in Banaue', draft.title))
+    + fieldHTML('Entry', textareaHTML('text', 'What happened today? What did you see, eat, feel?', draft.text, 5));
+  openSheet(existing?'Edit journal entry':'New journal entry', html, ()=>{
+    if(!draft.text || !draft.text.trim()) return;
+    if(existing) STATE.journal = STATE.journal.map(x=> x.id===existing.id ? {...draft, id: existing.id} : x);
+    else STATE.journal.push({...draft, id: uid()});
+    persist('journal'); closeSheet(); renderAll();
+  }, canSave, existing?'Save changes':'Save entry');
+}
+
+function renderNotes(){
+  let html = tabHeadHTML('notes','Notes','Packing, tips & everything else','note');
+  html += renderEmergencyContacts();
+  html += renderDocuments();
+  html += renderJournal();
+  html += renderSavedTrips();
+  html += `<div class="serif" style="font-weight:600;font-size:15px;margin:20px 0 10px;">Other notes</div>`;
+  html += `<div style="display:flex;gap:8px;margin-bottom:14px;overflow-x:auto;">`;
+  ['All',...NOTE_CATS].forEach(c=>{
+    html += `<button class="chip ${STATE.noteFilter===c?'active':''}" data-notefilter="${esc(c)}">${esc(c)}</button>`;
+  });
+  html += `</div>`;
+  const shown = STATE.noteFilter==='All' ? STATE.notes : STATE.notes.filter(n=>n.category===STATE.noteFilter);
+  if(shown.length===0){ html += emptyHTML('notes','Nothing here yet','Jot packing items, local tips, or any reminder for the trip.'); }
+  else {
+    shown.forEach(n=>{
+      const isPack = n.category==='Packing List';
+      html += `<div class="card" style="display:flex;align-items:flex-start;gap:10px;">
+        ${isPack
+          ? `<button data-notetoggle="${n.id}" style="background:none;border:none;margin-top:1px;color:${n.done?'var(--terraceDeep)':'var(--bark)'};">${n.done?ICON.checksq:ICON.sq}</button>`
+          : `<span style="margin-top:2px;flex-shrink:0;color:var(--gold);">${ICON.sparkle}</span>`}
+        <div style="flex:1;">
+          <div style="font-size:14px;${n.done?'text-decoration:line-through;opacity:.55;':''}">${esc(n.text)}</div>
+          <div style="font-size:11px;color:var(--soilSoft);margin-top:2px;">${esc(n.category)}</div>
+        </div>
+        ${actionColHTML('notes', n.id)}
+      </div>`;
+    });
+  }
+  return html;
+}
+function openNoteSheet(existing){
+  draft = existing ? {...existing} : {category:'General', text:'', done:false};
+  const canSave = ()=> !!(draft.text && draft.text.trim());
+  const html = fieldHTML('Category', selectHTML('category', NOTE_CATS, draft.category))
+    + fieldHTML('Note', textareaHTML('text', 'e.g. Bring small bills for the terrace viewpoint entrance fee', draft.text, 3));
+  openSheet(existing?'Edit note':'Add note', html, ()=>{
+    if(!draft.text || !draft.text.trim()) return;
+    if(existing) STATE.notes = STATE.notes.map(x=> x.id===existing.id ? {...x, category: draft.category||'General', text: draft.text} : x);
+    else STATE.notes.push({category: draft.category||'General', text: draft.text, done:false, id: uid()});
+    persist('notes'); closeSheet(); renderAll();
+  }, canSave, existing?'Save changes':'Save note');
+}
+
+/* ==================================================
+   TAB: OVERVIEW
+================================================== */
+function renderOverview(){
+  const events = [];
+  STATE.flights.forEach(f=> { const d = f.departDate || f.date; d && events.push({id:f.id, type:'flight', date:d, title:`${f.from||'?'} → ${f.to||'?'}`, sub:[f.airline, (f.departTime||f.time)?`Dep ${f.departTime||f.time}`:null, (f.arriveDate && f.arriveDate!==d)?`Arr ${fmtShort(f.arriveDate)}${f.arriveTime?' '+f.arriveTime:''}`:(f.arriveTime?`Arr ${f.arriveTime}`:null)].filter(Boolean).join(' · ')}); });
+  STATE.stays.forEach(s=> s.checkIn && events.push({id:s.id, type:'stay', date:s.checkIn, title:s.name, sub:`Check-in${s.checkOut?` → checkout ${fmtShort(s.checkOut)}`:''}${s.location?` · ${s.location}`:''}`}));
+  STATE.tours.forEach(t=> { const d = t.startDate || t.date; d && events.push({id:t.id, type:'tour', date:d, title:t.name, sub:[t.provider, (t.endDate && t.endDate!==d)?`through ${fmtShort(t.endDate)}`:null, t.time].filter(Boolean).join(' · ')}); });
+  events.sort((a,b)=> a.date.localeCompare(b.date));
+
+  const today = new Date().toISOString().slice(0,10);
+  const upcoming = events.filter(e=>e.date>=today);
+  const next = upcoming[0];
+  let daysUntil = null;
+  if(next){ daysUntil = Math.max(0, Math.round((new Date(next.date)-new Date(today))/86400000)); }
+
+  const auto = computeAutoTotals();
+  const manual = STATE.budget.reduce((s,b)=>s+(Number(b.amount)||0),0);
+  const grand = manual + auto.flights + auto.stays + auto.tours;
+
+  const iconFor = {flight:'plane', stay:'building', tour:'map'};
+
+  let heroLabel = events.length===0 ? 'Ready when you are' : (next ? 'Next up' : 'Trip complete');
+  let heroMain = events.length===0 ? 'Start planning' : (next ? (daysUntil===0 ? "It's happening today" : `${daysUntil} day${daysUntil===1?'':'s'} to go`) : 'Enjoy the memories');
+
+  let html = tabHeadHTML('grid','Overview','Your journey at a glance', null);
+
+  html += `<div style="position:relative;border-radius:18px;overflow:hidden;margin-bottom:18px;background:linear-gradient(160deg,var(--terraceDeep),var(--soil));padding:20px;">
+    <svg viewBox="0 0 400 100" preserveAspectRatio="none" style="position:absolute;bottom:0;left:0;width:100%;height:60px;opacity:.5;">
+      <polygon points="0,100 0,70 40,70 40,55 90,55 90,40 150,40 150,60 210,60 210,45 270,45 270,65 330,65 330,50 400,50 400,100" fill="var(--gold)" opacity="0.35"/>
+      <polygon points="0,100 0,85 60,85 60,72 120,72 120,80 190,80 190,68 260,68 260,82 340,82 340,70 400,70 400,100" fill="var(--terraceLight)" opacity="0.3"/>
+    </svg>
+    <div style="position:relative;display:flex;align-items:center;gap:14px;">
+      <div>${logoSVG(64)}</div>
+      <div>
+        <div class="uc" style="font-size:11.5px;color:var(--goldSoft);font-weight:600;">${esc(heroLabel)}</div>
+        <div class="serif" style="font-weight:800;font-size:22px;color:var(--mist);margin-top:2px;line-height:1.15;">${esc(heroMain)}</div>
+        ${next?`<div style="font-size:12.5px;color:var(--terraceLight);margin-top:2px;">${esc(next.title)} · ${esc(fmtDate(next.date))}</div>`:''}
+      </div>
+    </div>
+  </div>`;
+
+  html += `<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px;">
+    <div class="card" style="margin:0;"><div class="uc" style="font-size:11px;color:var(--soilSoft);font-weight:600;">Total budget</div><div class="serif" style="font-weight:700;font-size:20px;margin-top:2px;">${peso(grand)}</div></div>
+    <div class="card" style="margin:0;"><div class="uc" style="font-size:11px;color:var(--soilSoft);font-weight:600;">Itinerary items</div><div class="serif" style="font-weight:700;font-size:20px;margin-top:2px;">${events.length}</div></div>
+  </div>`;
+
+  const urgentDoc = urgentDocument();
+  if(urgentDoc){
+    html += `<div class="card" style="border-color:var(--clay);background:#FBEFE7;display:flex;align-items:center;gap:10px;">
+      <span style="color:var(--clay);flex-shrink:0;">${ICON.alert}</span>
+      <div style="font-size:12.5px;color:var(--soil);"><strong>${esc(urgentDoc.label)}</strong> ${urgentDoc.days<0?'has expired':`expires in ${urgentDoc.days} day${urgentDoc.days===1?'':'s'}`} (${esc(fmtDate(urgentDoc.expiryDate))})</div>
+    </div>`;
+  }
+
+  html += `<div class="serif" style="font-weight:600;font-size:16px;margin-bottom:10px;">Trip sequence</div>`;
+
+  if(events.length===0){
+    html += emptyHTML('grid','Nothing scheduled yet',"Add flights, stays, or tour packages with dates — they'll line up here automatically.");
+  } else {
+    const grouped = [];
+    events.forEach(e=>{
+      let g = grouped.find(g=>g.date===e.date);
+      if(!g){ g={date:e.date, items:[]}; grouped.push(g); }
+      g.items.push(e);
+    });
+    html += `<div style="position:relative;padding-left:4px;">`;
+    grouped.forEach((g,gi)=>{
+      html += `<div style="display:flex;gap:12px;margin-bottom:4px;">
+        <div style="display:flex;flex-direction:column;align-items:center;width:34px;">
+          <div style="width:10px;height:10px;border-radius:50%;background:var(--gold);margin-top:6px;flex-shrink:0;"></div>
+          ${gi<grouped.length-1?'<div style="width:2px;flex:1;background:var(--fog);margin-top:2px;"></div>':''}
+        </div>
+        <div style="flex:1;padding-bottom:18px;">
+          <div class="mono" style="font-size:12px;color:var(--clay);font-weight:500;margin-bottom:6px;">${esc(fmtDate(g.date))}</div>
+          ${g.items.map(e=>`
+            <div class="card" style="margin-bottom:8px;display:flex;align-items:center;gap:10px;">
+              <div style="width:34px;height:34px;border-radius:9px;background:var(--fog);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--terraceDeep);">${ICON[iconFor[e.type]]}</div>
+              <div style="flex:1;min-width:0;">
+                <div style="font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(e.title)}</div>
+                ${e.sub?`<div style="font-size:12px;color:var(--soilSoft);">${esc(e.sub)}</div>`:''}
+              </div>
+            </div>`).join('')}
+        </div>
+      </div>`;
+    });
+    html += `</div>`;
+  }
+  html += `<button class="btn-primary" style="margin-top:16px;background:var(--clay);" data-open-sheet="savepdf">${ICON.download} Save trip as PDF</button>`;
+  return html;
+}
+
+/* ---------------- MAIN RENDER ---------------- */
+function renderAll(){
+  if(!STATE.loaded){
+    document.getElementById('content').innerHTML = `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:70vh;gap:12px;">${logoSVG(72)}<div style="font-size:13px;color:var(--soilSoft);">Loading your journey…</div></div>`;
+    document.getElementById('bottomnav').innerHTML = '';
+    return;
+  }
+  renderNav();
+  let html = '';
+  if(STATE.tab==='overview') html = renderOverview();
+  else if(STATE.tab==='flights') html = renderFlights();
+  else if(STATE.tab==='stays') html = renderStays();
+  else if(STATE.tab==='tours') html = renderTours();
+  else if(STATE.tab==='budget') html = renderBudget();
+  else if(STATE.tab==='notes') html = renderNotes();
+  document.getElementById('content').innerHTML = `<div class="tabpad">${html}</div>`;
+  if(STATE.tab==='budget') recomputeCurrency();
+}
+
+/* ---------------- EVENT DELEGATION ---------------- */
+document.addEventListener('click', (e)=>{
+  const nav = e.target.closest('[data-nav]');
+  if(nav){ STATE.tab = nav.getAttribute('data-nav'); renderAll(); return; }
+
+  const openBtn = e.target.closest('[data-open-sheet]');
+  if(openBtn){
+    const k = openBtn.getAttribute('data-open-sheet');
+    if(k==='flight') openFlightSheet();
+    else if(k==='stay') openStaySheet();
+    else if(k==='tour') openTourSheet();
+    else if(k==='budget') openBudgetSheet();
+    else if(k==='note') openNoteSheet();
+    else if(k==='contact') openContactSheet();
+    else if(k==='savepdf') openSavePdfSheet();
+    else if(k==='document') openDocSheet();
+    else if(k==='journal') openJournalSheet();
+    return;
+  }
+
+  const refreshBtn = e.target.closest('[data-refresh-rates]');
+  if(refreshBtn){ refreshRates(); return; }
+
+  const dlBtn = e.target.closest('[data-download-trip]');
+  if(dlBtn){
+    const id = dlBtn.getAttribute('data-download-trip');
+    const trip = STATE.savedTrips.find(t=>t.id===id);
+    if(trip){
+      const bytes = base64ToBytes(trip.pdfBase64);
+      downloadPDFBytes(bytes, safeFileName(trip.name) + '.pdf');
+    }
+    return;
+  }
+
+  const editBtn = e.target.closest('[data-edit]');
+  if(editBtn){
+    const [list, id] = editBtn.getAttribute('data-edit').split(':');
+    const item = STATE[list].find(x=>x.id===id);
+    if(item){
+      if(list==='flights') openFlightSheet(item);
+      else if(list==='stays') openStaySheet(item);
+      else if(list==='tours') openTourSheet(item);
+      else if(list==='budget') openBudgetSheet(item);
+      else if(list==='notes') openNoteSheet(item);
+      else if(list==='contacts') openContactSheet(item);
+      else if(list==='documents') openDocSheet(item);
+      else if(list==='journal') openJournalSheet(item);
+    }
+    return;
+  }
+
+  const del = e.target.closest('[data-del]');
+  if(del){
+    const [list, id] = del.getAttribute('data-del').split(':');
+    STATE[list] = STATE[list].filter(x=>x.id!==id);
+    persist(list); renderAll();
+    return;
+  }
+
+  const nf = e.target.closest('[data-notefilter]');
+  if(nf){ STATE.noteFilter = nf.getAttribute('data-notefilter'); renderAll(); return; }
+
+  const nt = e.target.closest('[data-notetoggle]');
+  if(nt){
+    const id = nt.getAttribute('data-notetoggle');
+    STATE.notes = STATE.notes.map(n=> n.id===id ? {...n, done: !n.done} : n);
+    persist('notes'); renderAll();
+    return;
+  }
+});
+
+/* ---------------- INIT ---------------- */
+updateOfflineBadge();
+document.addEventListener('input', (e)=>{
+  if(e.target.id==='curAmount' || e.target.id==='curFrom' || e.target.id==='curTo') recomputeCurrency();
+});
+document.addEventListener('change', (e)=>{
+  if(e.target.id==='curFrom' || e.target.id==='curTo') recomputeCurrency();
+});
+loadAll();
+refreshRates();
+</script>
+</body>
+</html>
