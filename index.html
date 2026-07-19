@@ -139,6 +139,7 @@ const ICON = {
   idcard: '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><circle cx="8" cy="12" r="2"/><path d="M14 10h6M14 14h4"/></svg>',
   book: '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>',
   currency: '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m17 2 4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="m7 22-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>',
+  bell: '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>',
 };
 
 /* ---------------- LOGO ---------------- */
@@ -172,7 +173,7 @@ let STATE = {
   tab: 'overview',
   loaded: false,
   flights: [], stays: [], tours: [], budget: [], notes: [], contacts: [], savedTrips: [],
-  documents: [], journal: [], currency: { rates: DEFAULT_RATES, updated: null },
+  documents: [], journal: [], currency: { rates: DEFAULT_RATES, updated: null }, remindersShown: [],
   noteFilter: 'All',
 };
 let draft = {};
@@ -188,7 +189,7 @@ const hasStorage = typeof window !== 'undefined' && window.storage && typeof win
 const LS_PREFIX = 'mto_local_'; // localStorage fallback so the app works fully offline / standalone
 
 async function loadAll(){
-  const keys = ['flights','stays','tours','budget','notes','contacts','savedTrips','documents','journal','currency'];
+  const keys = ['flights','stays','tours','budget','notes','contacts','savedTrips','documents','journal','currency','remindersShown'];
   // 1) try local cache first (instant, works offline)
   keys.forEach(k=>{
     try{
@@ -222,6 +223,7 @@ async function loadAll(){
 
   STATE.loaded = true;
   renderAll();
+  checkReminders();
 }
 function persist(key){
   try{ localStorage.setItem(LS_PREFIX+key, JSON.stringify(STATE[key])); }catch(e){}
@@ -1013,8 +1015,103 @@ function openJournalSheet(existing){
   }, canSave, existing?'Save changes':'Save entry');
 }
 
+/* ==================================================
+   REMINDERS — 1 day before, and 5 hours before when a
+   time is set. Fires while the app is open/backgrounded;
+   the Overview banner is the reliable fallback for when it isn't.
+================================================== */
+function getReminderCandidates(){
+  const list = [];
+  STATE.flights.forEach(f=>{
+    const d = f.departDate || f.date;
+    if(!d) return;
+    list.push({type:'flight', id:f.id, date:d, time:f.departTime||f.time||null, label:`Flight: ${f.from||'?'} to ${f.to||'?'}`, detail:f.airline||''});
+  });
+  STATE.tours.forEach(t=>{
+    const d = t.startDate || t.date;
+    if(!d) return;
+    list.push({type:'tour', id:t.id, date:d, time:t.time||null, label:t.name||'Tour', detail:t.provider||''});
+  });
+  STATE.stays.forEach(s=>{
+    if(!s.checkIn) return;
+    list.push({type:'stay', id:s.id, date:s.checkIn, time:null, label:`Check-in: ${s.name||'Accommodation'}`, detail:s.location||''});
+  });
+  return list;
+}
+function reminderDateTime(item){
+  const dt = item.time ? new Date(`${item.date}T${item.time}:00`) : new Date(`${item.date}T00:00:00`);
+  return isNaN(dt) ? null : dt;
+}
+function reminderKey(type,id,threshold){ return `${type}:${id}:${threshold}`; }
+function fireNotification(title, body){
+  try{
+    if(typeof Notification==='undefined' || Notification.permission!=='granted') return;
+    if(navigator.serviceWorker && navigator.serviceWorker.getRegistration){
+      navigator.serviceWorker.getRegistration().then(reg=>{
+        if(reg && reg.showNotification) reg.showNotification(title, {body, icon:'icon-192.png', badge:'icon-192.png'});
+        else new Notification(title, {body, icon:'icon-192.png'});
+      }).catch(()=>{ try{ new Notification(title,{body, icon:'icon-192.png'}); }catch(e){} });
+    } else {
+      new Notification(title, {body, icon:'icon-192.png'});
+    }
+  }catch(e){ /* notifications blocked or unsupported on this device */ }
+}
+function upcomingReminders(windowHours){
+  // returns candidates currently inside the given hour window (for the Overview banner, permission-independent)
+  const now = new Date();
+  return getReminderCandidates().map(item=>{
+    const dt = reminderDateTime(item);
+    if(!dt) return null;
+    const hoursUntil = (dt - now) / 3600000;
+    return {...item, dt, hoursUntil};
+  }).filter(x=> x && x.hoursUntil > 0 && x.hoursUntil <= windowHours)
+    .sort((a,b)=> a.hoursUntil - b.hoursUntil);
+}
+function checkReminders(){
+  const now = new Date();
+  const candidates = getReminderCandidates();
+  let changed = false;
+  candidates.forEach(item=>{
+    const dt = reminderDateTime(item);
+    if(!dt) return;
+    const hoursUntil = (dt - now) / 3600000;
+    const timeStr = item.time ? ` at ${item.time}` : '';
+    const key1d = reminderKey(item.type,item.id,'1d');
+    if(hoursUntil>0 && hoursUntil<=24 && !STATE.remindersShown.includes(key1d)){
+      fireNotification(`Tomorrow: ${item.label}`, `${item.detail?item.detail+' - ':''}${fmtDate(item.date)}${timeStr}`);
+      STATE.remindersShown.push(key1d); changed=true;
+    }
+    if(item.time){
+      const key5h = reminderKey(item.type,item.id,'5h');
+      if(hoursUntil>0 && hoursUntil<=5 && !STATE.remindersShown.includes(key5h)){
+        fireNotification(`Starting soon: ${item.label}`, `${item.detail?item.detail+' - ':''}${fmtDate(item.date)}${timeStr} (about 5 hours away)`);
+        STATE.remindersShown.push(key5h); changed=true;
+      }
+    }
+  });
+  if(changed) persist('remindersShown');
+}
+
+function renderReminderSettings(){
+  const supported = typeof Notification !== 'undefined';
+  const perm = supported ? Notification.permission : 'unsupported';
+  let statusText;
+  if(!supported) statusText = "Phone alerts aren't supported in this browser.";
+  else if(perm==='granted') statusText = "Phone alerts are on. You'll be notified 1 day before, and 5 hours before when a time is set, for flights, tours, and check-ins — while the app is open or running in the background.";
+  else if(perm==='denied') statusText = 'Phone alerts are blocked in your browser settings for this app. Enable notifications for this site to turn them back on.';
+  else statusText = 'Turn on phone alerts to get reminded 1 day before, and 5 hours before when a time is set, for your flights, tours, and check-ins.';
+  return `<div style="display:flex;align-items:center;justify-content:space-between;margin:2px 0 10px;">
+    <div class="serif" style="font-weight:600;font-size:15px;display:flex;align-items:center;gap:6px;">${ICON.bell} Reminders</div>
+  </div>
+  <div class="card">
+    <div style="font-size:12.5px;color:var(--soilSoft);line-height:1.5;${supported && perm!=='granted' ? 'margin-bottom:10px;':''}">${esc(statusText)}</div>
+    ${supported && perm!=='granted' ? `<button class="btn-primary" data-enable-notifs>${ICON.bell} Enable phone alerts</button>` : ''}
+  </div>`;
+}
+
 function renderNotes(){
   let html = tabHeadHTML('notes','Notes','Packing, tips & everything else','note');
+  html += renderReminderSettings();
   html += renderEmergencyContacts();
   html += renderDocuments();
   html += renderJournal();
@@ -1116,6 +1213,17 @@ function renderOverview(){
     </div>`;
   }
 
+  const reminders = upcomingReminders(24);
+  if(reminders.length){
+    const r = reminders[0];
+    const hrs = Math.round(r.hoursUntil);
+    const whenText = hrs<1 ? 'less than an hour' : (hrs===1 ? '1 hour' : (hrs<24 ? `${hrs} hours` : `${Math.round(hrs/24)} day${Math.round(hrs/24)===1?'':'s'}`));
+    html += `<div class="card" style="border-color:var(--gold);background:#FBF6E9;display:flex;align-items:center;gap:10px;">
+      <span style="color:var(--gold);flex-shrink:0;">${ICON.bell}</span>
+      <div style="font-size:12.5px;color:var(--soil);"><strong>${esc(r.label)}</strong> in about ${esc(whenText)} (${esc(fmtDate(r.date))}${r.time?' · '+esc(r.time):''})</div>
+    </div>`;
+  }
+
   html += `<div class="serif" style="font-weight:600;font-size:16px;margin-bottom:10px;">Trip sequence</div>`;
 
   if(events.length===0){
@@ -1172,16 +1280,44 @@ function renderAll(){
   if(STATE.tab==='budget') recomputeCurrency();
 }
 
+function showConfirmDialog(title, message, confirmLabel, onConfirm){
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:70;display:flex;align-items:center;justify-content:center;padding:24px;';
+  overlay.innerHTML = `
+    <div class="confirm-bg" style="position:absolute;inset:0;background:rgba(51,38,28,.55);"></div>
+    <div style="position:relative;background:var(--paper);border-radius:16px;padding:20px;max-width:360px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,.35);">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+        <div style="width:32px;height:32px;flex-shrink:0;">${logoSVG(32)}</div>
+        <div class="serif" style="font-weight:700;font-size:16px;color:var(--soil);">${esc(title)}</div>
+      </div>
+      <div style="font-size:13.5px;color:var(--soilSoft);line-height:1.55;margin-bottom:20px;white-space:pre-line;">${esc(message)}</div>
+      <div style="display:flex;gap:10px;">
+        <button class="confirm-cancel" style="flex:1;background:var(--fog);border:none;border-radius:10px;padding:11px;font-weight:600;font-size:13.5px;color:var(--soil);">Cancel</button>
+        <button class="confirm-ok" style="flex:1;background:var(--clay);border:none;border-radius:10px;padding:11px;font-weight:600;font-size:13.5px;color:var(--mist);">${esc(confirmLabel)}</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  const cleanup = () => { if(overlay.parentNode) document.body.removeChild(overlay); };
+  overlay.querySelector('.confirm-bg').onclick = cleanup;
+  overlay.querySelector('.confirm-cancel').onclick = cleanup;
+  overlay.querySelector('.confirm-ok').onclick = () => { cleanup(); onConfirm(); };
+}
+
 function resetAllData(){
-  const ok = confirm('This permanently deletes all flights, stays, tours, budget entries, notes, documents, journal entries, emergency contacts, and saved trip PDFs from this device. This cannot be undone.\n\nContinue?');
-  if(!ok) return;
-  ['flights','stays','tours','budget','notes','contacts','savedTrips','documents','journal'].forEach(k=>{
-    STATE[k] = [];
-    persist(k);
-  });
-  STATE.noteFilter = 'All';
-  STATE.tab = 'overview';
-  renderAll();
+  showConfirmDialog(
+    'My Travel Organizer',
+    'This permanently deletes all flights, stays, tours, budget entries, notes, documents, journal entries, emergency contacts, and saved trip PDFs from this device. This cannot be undone.',
+    'Clear everything',
+    () => {
+      ['flights','stays','tours','budget','notes','contacts','savedTrips','documents','journal'].forEach(k=>{
+        STATE[k] = [];
+        persist(k);
+      });
+      STATE.noteFilter = 'All';
+      STATE.tab = 'overview';
+      renderAll();
+    }
+  );
 }
 
 /* ---------------- EVENT DELEGATION ---------------- */
@@ -1209,6 +1345,14 @@ document.addEventListener('click', (e)=>{
 
   const resetBtn = e.target.closest('[data-reset-all]');
   if(resetBtn){ resetAllData(); return; }
+
+  const enableNotifBtn = e.target.closest('[data-enable-notifs]');
+  if(enableNotifBtn){
+    if(typeof Notification!=='undefined'){
+      Notification.requestPermission().then(()=>{ renderAll(); checkReminders(); });
+    }
+    return;
+  }
 
   const dlBtn = e.target.closest('[data-download-trip]');
   if(dlBtn){
@@ -1268,6 +1412,7 @@ document.addEventListener('change', (e)=>{
 });
 loadAll();
 refreshRates();
+setInterval(checkReminders, 5*60*1000);
 </script>
 </body>
 </html>
