@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>MTO Activation Proxy - Test Tool</title>
+<style>
+  body{font-family:-apple-system,Segoe UI,Roboto,sans-serif;background:#F6F0E3;color:#33261C;margin:0;padding:20px;}
+  h1{font-size:19px;margin-bottom:4px;}
+  p.sub{color:#5C4A3A;font-size:13px;margin-top:0;margin-bottom:20px;}
+  label{display:block;font-size:12px;font-weight:600;color:#5C4A3A;margin-bottom:5px;margin-top:14px;text-transform:uppercase;letter-spacing:.4px;}
+  input{width:100%;box-sizing:border-box;border:1.5px solid #EDE4CF;background:#FBF7EE;border-radius:10px;padding:11px 12px;font-size:15px;color:#33261C;}
+  button{width:100%;margin-top:18px;background:#3E5C3F;color:#F6F0E3;border:none;border-radius:10px;padding:13px;font-size:15px;font-weight:600;}
+  button:disabled{opacity:.6;}
+  #result{margin-top:20px;padding:14px;border-radius:10px;font-size:13.5px;white-space:pre-wrap;word-break:break-word;display:none;}
+  #result.ok{background:#E8F0E4;border:1px solid #3E5C3F;display:block;}
+  #result.fail{background:#FBEFE7;border:1px solid #B3612F;display:block;}
+  .hint{font-size:11.5px;color:#5C4A3A;margin-top:4px;}
+</style>
+</head>
+<body>
+  <h1>Activation Proxy Test Tool</h1>
+  <p class="sub">Use this once to confirm your Vercel proxy + Redis + Payhip are all wired up correctly. Not part of the real app.</p>
+
+  <label>Your proxy URL</label>
+  <input id="proxyUrl" type="text" placeholder="https://mto-activation-proxy-xxxx.vercel.app" />
+  <div class="hint">Paste your Vercel project's live URL here, no trailing slash needed.</div>
+
+  <label>License key</label>
+  <input id="licenseKey" type="text" placeholder="Paste a real key from Payhip" />
+
+  <label>Device ID</label>
+  <input id="deviceId" type="text" />
+  <div class="hint">Pre-filled with a random test ID. Change it to simulate a "different device."</div>
+
+  <button id="testBtn">Send Test Request</button>
+
+  <div id="result"></div>
+
+  <script>
+    document.getElementById('deviceId').value = 'test-' + Math.random().toString(36).slice(2, 10);
+
+    document.getElementById('testBtn').addEventListener('click', async () => {
+      const btn = document.getElementById('testBtn');
+      const result = document.getElementById('result');
+      let proxyUrl = document.getElementById('proxyUrl').value.trim().replace(/\/$/, '');
+      const licenseKey = document.getElementById('licenseKey').value.trim();
+      const deviceId = document.getElementById('deviceId').value.trim();
+
+      result.className = '';
+      result.removeAttribute('style');
+
+      if (!proxyUrl || !licenseKey) {
+        result.className = 'fail';
+        result.textContent = 'Please fill in both the proxy URL and license key.';
+        return;
+      }
+
+      btn.disabled = true;
+      btn.textContent = 'Sending...';
+
+      try {
+        const res = await fetch(proxyUrl + '/api/activate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ licenseKey, deviceId }),
+        });
+        const text = await res.text();
+        let data;
+        try { data = JSON.parse(text); } catch (e) { data = null; }
+
+        if (data) {
+          result.className = data.allowed ? 'ok' : 'fail';
+          result.textContent =
+            `HTTP status: ${res.status}\n\n` +
+            `allowed: ${data.allowed}\n` +
+            `message: ${data.message}\n\n` +
+            (data.allowed
+              ? '✅ Looks correctly wired up.'
+              : '⚠️ Got a response, but activation was not allowed — check the message above (could be a wrong/disabled key, or device limit reached, which is also a sign it IS working).');
+        } else {
+          result.className = 'fail';
+          result.textContent = `HTTP status: ${res.status}\n\nRaw response (not valid JSON):\n${text.slice(0, 800)}\n\nThis usually means a server error — check your Vercel function logs (Deployments → your deployment → Functions) for the real cause, often a missing or misnamed environment variable.`;
+        }
+      } catch (e) {
+        result.className = 'fail';
+        result.textContent = `Could not reach the proxy at all.\n\nError: ${e.message}\n\nDouble check the proxy URL is correct and the deployment succeeded.`;
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Send Test Request';
+      }
+    });
+  </script>
+</body>
+</html>
